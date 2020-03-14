@@ -155,8 +155,8 @@ winform.onDropFiles = function(files){
 }
 
 import style;
-winform.btnLoad.skin(style.button)
-winform.btnSave.skin(style.primaryButton)
+winform.btnLoad.skin(style.button);
+winform.btnSave.skin(style.primaryButton);
 
 winform.editPhrase.limit = 0;
 winform.editPhrase.text = config.phrase.editorText ? config.phrase.editorText : wubi.phrase.default;

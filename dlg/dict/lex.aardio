@@ -36,18 +36,18 @@ import app.lexManager;
 
 winform.lbTip.busy = function(busy,text){
 	if(busy){
-		winform.lbTip.text = text : ""
+		winform.lbTip.text = text : "";
 		winform.lbTip.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}	
 	}
 	else {
 		winform.lbTip.disabledText = null;
-		winform.lbTip.text = text : "" 
+		winform.lbTip.text = text : "";
 	}
 }
 
 winform.editLex.busy = function(busy,text){
 	if(busy){
-		winform.lbTip.text = text : ""
+		winform.lbTip.text = text : "";
 		winform.lbTip.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
 		winform.editLex.readonly = true;
 	}
@@ -78,9 +78,11 @@ winform.onLexManagerUpdated = function(){
 }
 
 winform.btnAddFile.oncommand = function(id,event){
-	winform.btnAddFile.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
 	var inputPath = fsys.dlg.open("二进制码表(*.lex);文本码表(*.txt,*.csv,*.json)|*.lex;*.txt;*.csv;*.json||",,,winform)
-	app.lexManager.addFile(winform,inputPath);
+	if(inputPath){
+		winform.btnAddFile.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
+		app.lexManager.addFile(winform,inputPath);
+	}
 }
 
 import process.admin;
@@ -111,6 +113,8 @@ winform.btnCopyToSystem.oncommand = function(id,event){
 		winform.editLex.setFocus(); 					
 		winform.btnCopyToSystem.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
 		winform.lbTip.text = "安装需要几分钟，请耐心等待 ..."
+		winform.listbox.disabled = true;
+		winform.btnSave.disabled = true;
 	  
 		var ok,err = win.invoke(
 			function(srcPath,winform){
@@ -122,6 +126,8 @@ winform.btnCopyToSystem.oncommand = function(id,event){
 	  	key.ime.changeRequest(0x4090409); 
 		winform.lbTip.text = ok?'安装成功，如果不能输入，请按 Alt + Shift 来回切换一下即可': string.concat( "安装失败：",err);
 		winform.btnCopyToSystem.disabledText = null; 
+		winform.listbox.disabled = false;
+		winform.btnSave.disabled = false;
 	}	
 }
 
@@ -478,7 +484,7 @@ winform.ddChar1.oncommand = function(){
 
 winform.ddChar2.oncommand = function(){
 	if(!#winform.editLex.text){
-		winform.msgErr.err("要转换的码表内容不能为空!")
+		winform.msgErr("要转换的码表内容不能为空!")
 		return;
 	}
 			
@@ -740,8 +746,8 @@ var createMenuItems = function(){
 			};
 		}}
 		{ /*---分隔线---*/ };
-		{ "提取短语";{  
-			{ "提取系统短语已占用编码";
+		{ "分离短语";{  
+			{ "分离系统短语已占用编码";
 				function(id){  
 					thread.invoke( 
 						function(winform){
@@ -751,7 +757,7 @@ var createMenuItems = function(){
 							var wubiLex = wubi.lexFile("");
 							wubiLex.addText(winform.editLex.text); 
 							
-							var phraseText = wubiLex.removePhrase();
+							var phraseText = wubiLex.removeFromSystemPhrase();
 							winform.editLex.text = wubiLex.tostring(true);  
 							
 							var statistics = wubiLex.statistics(); 
@@ -770,11 +776,11 @@ var createMenuItems = function(){
 					)	 
 				}
 			}
-			{ "分离z键编码的词条到短语词库";
+			{ "分离z键编码、键名非常用单字编码到短语词库";
 				function(id){  
 					thread.invoke( 
 						function(winform){
-							winform.editLex.busy(true,"正在查找z键编码词条");
+							winform.editLex.busy(true,"正在查找z键编码、非常用单字占用键名编码的词条");
 							
 							import wubi.lexFile;
 							var wubiLex = wubi.lexFile("");
@@ -787,39 +793,11 @@ var createMenuItems = function(){
 								,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) )
 								
 							if(!#phraseText){
-								winform.msgbox("当前码表未包含z键编码的词条")	
+								winform.msgbox("当前码表未包含z键编码、键名非单字优先编码")	
 							}
 							else {
 								import fsys.dlg;
 								var path = fsys.dlg.save("*.phrase.txt|*.phrase.txt||","保存短语到文本文件",,winform)
-								if(path)string.save(path,phraseText)
-							}
-						},winform
-					)	 
-				}
-			}
-			{ "提取键名单字到短语（避免键名字优先）";
-				function(id){
-					thread.invoke( 
-						function(winform){
-							winform.editLex.busy(true,"提取键名单字到短语");
-							
-							import wubi.lexFile;
-							var wubiLex = wubi.lexFile("");
-							wubiLex.addText(winform.editLex.text);
-							var phraseText = wubiLex.removeKeyNamePhrase();
-							winform.editLex.text = wubiLex.tostring(true);
-							
-							var statistics = wubiLex.statistics(); 
-							winform.editLex.busy(false
-								,string.format("总编码数：%d 重码数：%d",statistics.totalTxt,statistics.coincidentTxt ) )
-								
-							if(!#phraseText){
-								winform.msgbox("当前码表未包含键名单字")	
-							}
-							else {
-								import fsys.dlg;
-								var path = fsys.dlg.save("*.phrase.txt|*.phrase.txt||","分离键名单字到短语词库",,winform)
 								if(path)string.save(path,phraseText)
 							}
 						},winform
@@ -1076,7 +1054,7 @@ menuSave.onOk = function(strip){
 import app.lexManager;
 winform.btnSave.oncommand = function(id,event){
 	if(!#winform.editLex.text){
-		return winform.msgErr("要保存的码表内容不能为空!")
+		return winform.msgErr("要保存的码表内容不能为空!");
 	}
 	
 	menuSave.popup(true,winform.btnSave,"up");
@@ -1104,6 +1082,8 @@ winform.ddSaveToCurrent.oncommand = function(id,event){
 			import wubi.lexFile; 
 			winform.btnSave.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
 			winform.editLex.busy(true,"正在保存码表，请稍候..")
+			winform.listbox.disabled = true;
+			
 			var wubiLex = wubi.lexFile("") 
 			wubiLex.addText(winform.editLex.text);
 			wubiLex.saveLex(lexPath)
@@ -1111,6 +1091,7 @@ winform.ddSaveToCurrent.oncommand = function(id,event){
 			winform.editLex.modified = false;
 			winform.editLex.busy(false,"已完成")
 			winform.btnSave.disabledText = null;	
+			winform.listbox.disabled = false;
 		},winform,lexPath
 	)
 }
@@ -1124,6 +1105,7 @@ winform.ddSaveAs.oncommand = function(id,event){
 			import wubi.lexFile; 
 			winform.btnSave.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'}
 			winform.editLex.busy(true,"正在保存码表，请稍候..")
+			winform.listbox.disabled = true;
 			
 			var wubiLex = wubi.lexFile("") 
 			wubiLex.addText(winform.editLex.text);
@@ -1134,7 +1116,8 @@ winform.ddSaveAs.oncommand = function(id,event){
 			winform.listbox.selIndex = winform.listbox.count;
 			
 			winform.editLex.busy(false,"已完成")
-			winform.btnSave.disabledText = null;	
+			winform.btnSave.disabledText = null;
+			winform.listbox.disabled = false;	
 		},winform,lexPath
 	)
 }
@@ -1143,8 +1126,9 @@ winform.ddSaveToSystem.oncommand = function(id,event){
 		
 	winform.editLex.setFocus(); 	
 	winform.btnSave.disabledText = {'\uF254';'\uF251';'\uF252';'\uF253';'\uF250'};				
-	winform.btnCopyToSystem.disabled = true
+	winform.btnCopyToSystem.disabled = true;
 	winform.editLex.busy(true,"安装需要几分钟，请耐心等待...")
+	winform.listbox.disabled = true;
 		
 	var ok,err = win.invoke(
 		function(lexText,winform){
@@ -1159,6 +1143,7 @@ winform.ddSaveToSystem.oncommand = function(id,event){
 	winform.listbox.selIndex = 1;
 	winform.btnCopyToSystem.disable = false;
 	winform.btnSave.disabledText = null;
+	winform.listbox.disabled = false;
 	
 	if(ok){
 		winform.editLex.modified = false;
